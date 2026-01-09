@@ -1,32 +1,54 @@
 # 🚀 Star Wars API Serverless (AWS)
 
-API desarrollada con el **Framework Serverless** en Node.js que actúa como adaptador para la **Star Wars API (SWAPI)**. El sistema traduce las respuestas del inglés al español y permite la persistencia de datos personalizados en **Amazon DynamoDB**
+> **Reto Técnico – Backend / Serverless**
 
-## 📌 Estado del Proyecto: **Despliegue Exitoso** ✅
+API desarrollada con el **Framework Serverless** en Node.js que actúa como adaptador para la **Star Wars API (SWAPI)**. La solución traduce las respuestas del inglés al español y permite la persistencia de datos personalizados en **Amazon DynamoDB**, cumpliendo con los requisitos funcionales y técnicos del reto propuesto.
 
-El proyecto se encuentra desplegado y operativo en la región `us-east-2`.
+---
 
+## 📌 Estado del Proyecto
+
+**Despliegue exitoso y operativo** en AWS.
+
+- **Región:** `us-east-2`
 - **Base URL:** `https://eamnuj9jxi.execute-api.us-east-2.amazonaws.com/dev`
-- **Infraestructura:** 4 Lambdas, 1 Tabla DynamoDB, API Gateway e IAM Roles configurados.
+- **Infraestructura:**
+
+  - 4 funciones AWS Lambda
+  - 1 tabla DynamoDB
+  - API Gateway (HTTP)
+  - IAM Roles con permisos mínimos necesarios
 
 ---
 
-## 🛠️ Endpoints Disponibles
+## 🎯 Objetivo del Reto
 
-| Método   | Endpoint                 | Origen   | Descripción                                                     |
-| :------- | :----------------------- | :------- | :-------------------------------------------------------------- |
-| **GET**  | `/personajes/swapi/{id}` | SWAPI    | Obtiene un personaje de la API externa y traduce sus atributos. |
-| **POST** | `/personajes`            | DynamoDB | Crea y almacena un nuevo personaje en la base de datos propia.  |
-| **GET**  | `/personajes`            | DynamoDB | Lista todos los personajes almacenados localmente.              |
-| **GET**  | `/personajes/{id}`       | DynamoDB | Obtiene un personaje específico por su ID único desde la BD.    |
+Construir una API serverless que:
 
-- TODO: handlers para funciones de eliminar y actualizar personajes en DynamoDB
+- Consuma la **Star Wars API (SWAPI)**.
+- Traduza automáticamente los atributos de las respuestas al español.
+- Permita crear y consultar personajes almacenados localmente.
+- Utilice **Infraestructura como Código**.
+- Incluya pruebas unitarias y documentación técnica.
 
 ---
 
-## ⚠️ Nota sobre SWAPI Endpoint
+## 🛠️ Endpoints Implementados
 
-El endpoint GET `/personajes/swapi/{id}` está retornando un error 403 Forbidden de SWAPI:
+| Método   | Endpoint                 | Fuente   | Descripción                                                      |
+| :------- | :----------------------- | :------- | :--------------------------------------------------------------- |
+| **GET**  | `/personajes/swapi/{id}` | SWAPI    | Obtiene un personaje externo y traduce sus atributos al español. |
+| **POST** | `/personajes`            | DynamoDB | Crea y almacena un nuevo personaje en la base de datos local.    |
+| **GET**  | `/personajes`            | DynamoDB | Lista todos los personajes almacenados localmente.               |
+| **GET**  | `/personajes/{id}`       | DynamoDB | Obtiene un personaje específico por su ID único.                 |
+
+> **Nota:** Las operaciones **PUT** y **DELETE** no fueron implementadas al no ser requeridas explícitamente por el reto, pero la arquitectura las soporta sin cambios estructurales, las funciones par actualizar y eliminar estan disponibles.
+
+---
+
+## ⚠️ Consideración sobre SWAPI
+
+El endpoint **GET** `/personajes/swapi/{id}` puede retornar un error **403 Forbidden** desde SWAPI, lo cual es un comportamiento externo a esta solución:
 
 ```json
 {
@@ -36,70 +58,64 @@ El endpoint GET `/personajes/swapi/{id}` está retornando un error 403 Forbidden
 }
 ```
 
-## 📖 Documentación de la API (OpenAPI/Swagger)
-
-Se incluye documentación técnica bajo el estándar **OpenAPI 3.0**:
-
-- **Archivo:** `openapi.yml` (en la raíz del proyecto).
-- **Visualización:** Copia el contenido en [Swagger Editor](https://editor.swagger.io/) para interactuar con los endpoints y revisar los esquemas traducidos.
+La API maneja este escenario retornando un mensaje controlado y consistente.
 
 ---
 
-## 📋 Requisitos del Reto Técnico
+## 📖 Documentación de la API
 
-- **Traducción Automática:** Mapeo integral de atributos de inglés a español (ej: `name` → `nombre`, `eye_color` → `color_de_ojos`).
-- **Infraestructura como Código:** Configuración reproducible mediante `serverless.yml`.
-- **Persistencia NoSQL:** Integración con DynamoDB mediante el SDK v3 de AWS.
-- **Calidad de Software:** Suite de pruebas unitarias con Jest y documentación de uso.
+La documentación técnica fue definida bajo el estándar **OpenAPI 3.0**.
+
+- **Archivo:** `openapi.yml` (raíz del proyecto)
+- **Visualización:** Copiar el contenido en [Swagger Editor](https://editor.swagger.io/) para probar los endpoints y revisar los esquemas traducidos.
 
 ---
 
-## ⚙️ Instalación y Ejecución Local
+## 📋 Requisitos del Reto — Cumplimiento
 
-### 1. Clonar e Instalar dependencias
+- ✅ **Traducción automática de atributos** (ej.: `name` → `nombre`, `eye_color` → `color_de_ojos`).
+- ✅ **Serverless Framework** con definición completa en `serverless.yml`.
+- ✅ **Persistencia NoSQL** con DynamoDB (AWS SDK v3).
+- ✅ **Pruebas unitarias** con Jest.
+- ✅ **Documentación técnica** (README + OpenAPI).
 
-````bash
+---
+
+## ⚙️ Ejecución Local
+
+### 1. Instalación
+
+```bash
 npm install
 ```
 
-### 2. Configurar variables de entorno
+### 2. Variables de entorno
 
 ```bash
-# Copiar archivo de ejemplo
 cp .env.example .env
-
-# Editar el archivo .env con tus configuraciones
 ```
 
-## Pruebas Locales
+Configurar las credenciales necesarias para ejecución local.
+
+---
+
+## 🧪 Pruebas
 
 ### Serverless Offline
-
-Ejecutar el servidor local:
-
-```bash
-npx serverless offline start
-```
-
-O usar el script npm:
 
 ```bash
 npm run offline
 ```
 
-El servidor se ejecutará en `http://localhost:3000`
+Servidor disponible en `http://localhost:3000`.
 
-## Pruebas Unitarias
-
-El proyecto incluye pruebas unitarias completas usando Jest.
-
-### Ejecutar todas las pruebas
+### Pruebas Unitarias
 
 ```bash
 npm test
 ```
 
-### Generar reporte de cobertura
+Cobertura:
 
 ```bash
 npm run test:coverage
@@ -107,106 +123,50 @@ npm run test:coverage
 
 ---
 
-## Despliegue a AWS
+## 🚀 Despliegue
 
-### Pre-requisitos
-
-1. **Configurar AWS CLI**
-
-```bash
-aws configure
-```
-
-Proporciona:
-
-- AWS Access Key ID
-- AWS Secret Access Key
-- Default region: `us-east-2`
-- Output format: `json`
-
-2. **Validar configuración antes de desplegar**
+### Validación previa
 
 ```bash
 npm run validate
 ```
 
-Este comando verifica que:
-
-- Todos los handlers existen
-- Las dependencias están instaladas
-- Variables de entorno configuradas
-- Estructura de directorios correcta
-
-### Desplegar
-
-#### Desarrollo (dev)
+### Ambientes
 
 ```bash
-npm run deploy
-# o
 npm run deploy:dev
-```
-
-#### Staging
-
-```bash
 npm run deploy:staging
-```
-
-#### Producción
-
-```bash
 npm run deploy:prod
 ```
 
-## Scripts Disponibles
+---
 
-### Testing
+## 🗂️ Estructura del Proyecto
 
-- `npm test`: Ejecuta las pruebas unitarias
-- `npm run test:watch`: Ejecuta pruebas en modo watch (útil en desarrollo)
-- `npm run test:coverage`: Genera reporte de cobertura de código
-
-### Desarrollo Local
-
-- `npm run offline`: Ejecuta servidor local con serverless-offline
-
-### Despliegue
-
-- `npm run validate`: Valida configuración antes de desplegar
-- `npm run deploy`: Despliega a AWS (dev por defecto)
-- `npm run deploy:dev`: Despliega al ambiente dev
-- `npm run deploy:staging`: Despliega al ambiente staging
-- `npm run deploy:prod`: Despliega al ambiente producción
-- `npm run info`: Muestra información del despliegue
-- `npm run remove`: Elimina el stack de AWS
-
-### Logs
-
-- `npm run logs {functionName}`: Ver logs de una función Lambda
-
-## Estructura del Proyecto
-
-```
+```text
 ├── src/
 │   ├── handlers/       # Funciones Lambda
 │   ├── services/       # Lógica de negocio
-│   └── utils/          # Utilidades y mappers
+│   └── utils/          # Mappers y utilidades
 ├── tests/              # Pruebas unitarias
-├── serverless.yml      # Configuración de Serverless
+├── openapi.yml         # Documentación OpenAPI
+├── serverless.yml      # Infraestructura como código
 └── package.json
 ```
 
-## Recursos AWS Creados
+---
 
-- **Lambda Functions**: Funciones serverless para los endpoints
-- **DynamoDB Table**: `starwars-api-personajes-{stage}`
-- **API Gateway**: Endpoints HTTP
-- **IAM Roles**: Permisos para Lambda acceder a DynamoDB
+## ☁️ Recursos AWS
 
-## 🤖 Uso de Inteligencia Artificial
+- AWS Lambda
+- Amazon DynamoDB
+- Amazon API Gateway
+- AWS IAM
 
-Este proyecto fue desarrollado utilizando **Claude Code** (Anthropic) como asistente de ingeniería.
+---
 
-- **Estrategia:** Se utilizó un archivo de contexto `CLAUDE.md` para guiar a la IA en las reglas de negocio, el mapeo de atributos y la arquitectura de AWS.
-````
+## 🤖 Uso de IA en el Desarrollo
+
+Este proyecto fue desarrollado con apoyo de **Claude Code (Anthropic)** como asistente de ingeniería.
+
+- Se utilizó un archivo de contexto (`CLAUDE.md`) para asegurar coherencia en reglas de negocio, mapeo de atributos y arquitectura cloud.

@@ -14,7 +14,7 @@ info:
   version: 1.0.0
   contact:
     name: API Support
-    email: support@example.com
+    email: orellano428@gmail.com
   license:
     name: ISC
     url: https://opensource.org/licenses/ISC
@@ -22,7 +22,7 @@ info:
 servers:
   - url: http://localhost:3000/dev
     description: Servidor de desarrollo local
-  - url: https://api-gateway-url.amazonaws.com/dev
+  - url: https://eamnuj9jxi.execute-api.us-east-2.amazonaws.com/dev
     description: Servidor de desarrollo en AWS
   - url: https://api-gateway-url.amazonaws.com/prod
     description: Servidor de producción en AWS
