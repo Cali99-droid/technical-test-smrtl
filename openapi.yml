@@ -1,0 +1,577 @@
+openapi: 3.0.3
+info:
+  title: Star Wars API Serverless
+  description: |
+    API Serverless que actúa como adaptador para SWAPI (Star Wars API), traduciendo respuestas del inglés al español y persistiendo datos en DynamoDB.
+
+    ## Características
+    - Traducción automática de atributos del inglés al español
+    - Integración con SWAPI (https://swapi.py4e.com)
+    - Persistencia en AWS DynamoDB
+    - Validación de datos robusta
+    - Arquitectura serverless con AWS Lambda
+
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: ISC
+    url: https://opensource.org/licenses/ISC
+
+servers:
+  - url: http://localhost:3000/dev
+    description: Servidor de desarrollo local
+  - url: https://api-gateway-url.amazonaws.com/dev
+    description: Servidor de desarrollo en AWS
+  - url: https://api-gateway-url.amazonaws.com/prod
+    description: Servidor de producción en AWS
+
+tags:
+  - name: SWAPI
+    description: Endpoints que consumen la API externa de Star Wars
+  - name: Personajes
+    description: Endpoints para gestionar personajes en DynamoDB
+
+paths:
+  /personajes/swapi/{id}:
+    get:
+      tags:
+        - SWAPI
+      summary: Obtener personaje desde SWAPI
+      description: |
+        Obtiene un personaje de la API externa de Star Wars (SWAPI) y traduce todos los atributos del inglés al español.
+
+        Los personajes disponibles tienen IDs del 1 al 83.
+      operationId: getPersonajeSWAPI
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del personaje en SWAPI (1-83)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 83
+            example: 1
+      responses:
+        '200':
+          description: Personaje obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exito:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Personaje obtenido exitosamente desde SWAPI"
+                  datos:
+                    $ref: '#/components/schemas/PersonajeSWAPI'
+              examples:
+                lukeSkywalker:
+                  summary: Luke Skywalker
+                  value:
+                    exito: true
+                    mensaje: "Personaje obtenido exitosamente desde SWAPI"
+                    datos:
+                      nombre: "Luke Skywalker"
+                      altura: "172"
+                      masa: "77"
+                      color_de_cabello: "rubio"
+                      color_de_piel: "fair"
+                      color_de_ojos: "azul"
+                      año_de_nacimiento: "19BBY"
+                      genero: "masculino"
+                      planeta_natal: "https://swapi.py4e.com/api/planets/1/"
+                      peliculas:
+                        - "https://swapi.py4e.com/api/films/1/"
+                        - "https://swapi.py4e.com/api/films/2/"
+                      especies: []
+                      vehiculos:
+                        - "https://swapi.py4e.com/api/vehicles/14/"
+                      naves_espaciales:
+                        - "https://swapi.py4e.com/api/starships/12/"
+                      creado: "2014-12-09T13:50:51.644000Z"
+                      editado: "2014-12-20T21:17:56.891000Z"
+                      url: "https://swapi.py4e.com/api/people/1/"
+        '400':
+          description: ID inválido o no proporcionado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Bad Request"
+                mensaje: "El ID del personaje debe ser un número positivo"
+                idRecibido: "abc"
+        '404':
+          description: Personaje no encontrado en SWAPI
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Not Found"
+                mensaje: "Personaje con ID 9999 no encontrado en SWAPI"
+                idBuscado: "9999"
+        '503':
+          description: Error de conexión con SWAPI
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Service Unavailable"
+                mensaje: "No se pudo conectar con el servicio de Star Wars"
+                detalles: "No se pudo conectar con SWAPI. Verifica tu conexión a internet"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /personajes:
+    post:
+      tags:
+        - Personajes
+      summary: Crear nuevo personaje
+      description: |
+        Crea un nuevo personaje en la base de datos DynamoDB.
+
+        El ID se genera automáticamente (UUID v4) y se agregan timestamps de creación y actualización.
+
+        **Validaciones:**
+        - El campo `nombre` es obligatorio
+        - Los campos numéricos deben contener valores numéricos
+        - El género debe ser uno de: masculino, femenino, hermafrodita, n/a, desconocido
+      operationId: createPersonaje
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonajeInput'
+            examples:
+              obiWan:
+                summary: Obi-Wan Kenobi
+                value:
+                  nombre: "Obi-Wan Kenobi"
+                  altura: "182"
+                  masa: "77"
+                  color_de_cabello: "castaño"
+                  color_de_piel: "clara"
+                  color_de_ojos: "azul"
+                  año_de_nacimiento: "57BBY"
+                  genero: "masculino"
+                  planeta_natal: "Stewjon"
+                  peliculas:
+                    - "La Amenaza Fantasma"
+                    - "El Ataque de los Clones"
+                    - "La Venganza de los Sith"
+                  especies:
+                    - "Humano"
+                  vehiculos: []
+                  naves_espaciales:
+                    - "Jedi Starfighter"
+              minimo:
+                summary: Personaje mínimo (solo nombre)
+                value:
+                  nombre: "Yoda"
+      responses:
+        '201':
+          description: Personaje creado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exito:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Personaje creado exitosamente"
+                  datos:
+                    $ref: '#/components/schemas/Personaje'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Bad Request"
+                  mensaje:
+                    type: string
+                    example: "Faltan campos obligatorios o están vacíos"
+                  camposFaltantes:
+                    type: array
+                    items:
+                      type: string
+                    example: ["nombre"]
+                  ejemplo:
+                    type: object
+        '409':
+          description: Conflicto - Personaje con ese ID ya existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - Personajes
+      summary: Listar personajes
+      description: |
+        Lista todos los personajes almacenados en DynamoDB.
+
+        Los personajes se retornan ordenados por fecha de creación (más recientes primero).
+      operationId: listPersonajes
+      parameters:
+        - name: limite
+          in: query
+          required: false
+          description: Número máximo de personajes a retornar
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+            example: 20
+      responses:
+        '200':
+          description: Lista de personajes obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exito:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Personajes obtenidos exitosamente"
+                  total:
+                    type: integer
+                    example: 3
+                  limite:
+                    type: integer
+                    example: 50
+                  datos:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Personaje'
+              examples:
+                conPersonajes:
+                  summary: Con personajes
+                  value:
+                    exito: true
+                    mensaje: "Personajes obtenidos exitosamente"
+                    total: 2
+                    limite: 50
+                    datos:
+                      - id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                        nombre: "Obi-Wan Kenobi"
+                        altura: "182"
+                        masa: "77"
+                        genero: "masculino"
+                        creado: "2026-01-08T12:34:56.789Z"
+                        actualizado: "2026-01-08T12:34:56.789Z"
+                      - id: "b2c3d4e5-f6g7-8901-bcde-fg2345678901"
+                        nombre: "Ahsoka Tano"
+                        altura: "166"
+                        genero: "femenino"
+                        creado: "2026-01-08T11:20:30.123Z"
+                        actualizado: "2026-01-08T11:20:30.123Z"
+                sinPersonajes:
+                  summary: Sin personajes
+                  value:
+                    exito: true
+                    mensaje: "No hay personajes almacenados"
+                    total: 0
+                    datos: []
+        '503':
+          description: Error de conexión con DynamoDB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /personajes/{id}:
+    get:
+      tags:
+        - Personajes
+      summary: Obtener personaje por ID
+      description: |
+        Obtiene un personaje específico de DynamoDB usando su ID único (UUID).
+      operationId: getPersonaje
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID único del personaje (UUID)
+          schema:
+            type: string
+            format: uuid
+            example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      responses:
+        '200':
+          description: Personaje obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exito:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Personaje obtenido exitosamente"
+                  datos:
+                    $ref: '#/components/schemas/Personaje'
+        '400':
+          description: ID inválido o no proporcionado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Bad Request"
+                mensaje: "El ID del personaje debe ser una cadena válida"
+                idRecibido: ""
+        '404':
+          description: Personaje no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Not Found"
+                mensaje: "No se encontró el personaje con ID a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                idBuscado: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                sugerencia: "Verifique que el ID sea correcto o cree un nuevo personaje usando POST /personajes"
+        '503':
+          description: Error de conexión con DynamoDB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    PersonajeSWAPI:
+      type: object
+      description: Personaje obtenido de SWAPI con campos traducidos al español
+      properties:
+        nombre:
+          type: string
+          description: Nombre del personaje
+          example: "Luke Skywalker"
+        altura:
+          type: string
+          description: Altura en centímetros
+          example: "172"
+        masa:
+          type: string
+          description: Masa en kilogramos
+          example: "77"
+        color_de_cabello:
+          type: string
+          description: Color de cabello
+          example: "rubio"
+        color_de_piel:
+          type: string
+          description: Color de piel
+          example: "fair"
+        color_de_ojos:
+          type: string
+          description: Color de ojos
+          example: "azul"
+        año_de_nacimiento:
+          type: string
+          description: Año de nacimiento
+          example: "19BBY"
+        genero:
+          type: string
+          description: Género del personaje
+          enum: [masculino, femenino, hermafrodita, n/a, desconocido]
+          example: "masculino"
+        planeta_natal:
+          type: string
+          description: URL del planeta natal
+          example: "https://swapi.py4e.com/api/planets/1/"
+        peliculas:
+          type: array
+          description: URLs de las películas en las que aparece
+          items:
+            type: string
+          example: ["https://swapi.py4e.com/api/films/1/"]
+        especies:
+          type: array
+          description: URLs de las especies
+          items:
+            type: string
+          example: []
+        vehiculos:
+          type: array
+          description: URLs de los vehículos
+          items:
+            type: string
+          example: ["https://swapi.py4e.com/api/vehicles/14/"]
+        naves_espaciales:
+          type: array
+          description: URLs de las naves espaciales
+          items:
+            type: string
+          example: ["https://swapi.py4e.com/api/starships/12/"]
+        creado:
+          type: string
+          format: date-time
+          description: Fecha de creación en SWAPI
+          example: "2014-12-09T13:50:51.644000Z"
+        editado:
+          type: string
+          format: date-time
+          description: Fecha de última edición en SWAPI
+          example: "2014-12-20T21:17:56.891000Z"
+        url:
+          type: string
+          description: URL del recurso en SWAPI
+          example: "https://swapi.py4e.com/api/people/1/"
+
+    PersonajeInput:
+      type: object
+      required:
+        - nombre
+      properties:
+        nombre:
+          type: string
+          description: Nombre del personaje (obligatorio)
+          example: "Obi-Wan Kenobi"
+          minLength: 1
+        altura:
+          type: string
+          description: Altura en centímetros
+          example: "182"
+          pattern: '^\d+$'
+        masa:
+          type: string
+          description: Masa en kilogramos
+          example: "77"
+          pattern: '^\d+$'
+        color_de_cabello:
+          type: string
+          description: Color de cabello
+          example: "castaño"
+        color_de_piel:
+          type: string
+          description: Color de piel
+          example: "clara"
+        color_de_ojos:
+          type: string
+          description: Color de ojos
+          example: "azul"
+        año_de_nacimiento:
+          type: string
+          description: Año de nacimiento
+          example: "57BBY"
+        genero:
+          type: string
+          description: Género del personaje
+          enum: [masculino, femenino, hermafrodita, n/a, desconocido]
+          example: "masculino"
+        planeta_natal:
+          type: string
+          description: Planeta natal
+          example: "Stewjon"
+        peliculas:
+          type: array
+          description: Lista de películas
+          items:
+            type: string
+          example: ["La Amenaza Fantasma", "El Ataque de los Clones"]
+        especies:
+          type: array
+          description: Lista de especies
+          items:
+            type: string
+          example: ["Humano"]
+        vehiculos:
+          type: array
+          description: Lista de vehículos
+          items:
+            type: string
+          example: []
+        naves_espaciales:
+          type: array
+          description: Lista de naves espaciales
+          items:
+            type: string
+          example: ["Jedi Starfighter"]
+
+    Personaje:
+      allOf:
+        - $ref: '#/components/schemas/PersonajeInput'
+        - type: object
+          required:
+            - id
+            - creado
+            - actualizado
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: ID único generado automáticamente
+              example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+            creado:
+              type: string
+              format: date-time
+              description: Fecha de creación del registro
+              example: "2026-01-08T12:34:56.789Z"
+            actualizado:
+              type: string
+              format: date-time
+              description: Fecha de última actualización
+              example: "2026-01-08T12:34:56.789Z"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Tipo de error
+          example: "Bad Request"
+        mensaje:
+          type: string
+          description: Mensaje descriptivo del error
+          example: "El ID del personaje es requerido"
+        detalles:
+          type: string
+          description: Detalles adicionales del error
+          example: "Debe proporcionar un ID válido en la ruta"

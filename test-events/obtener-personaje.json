@@ -1,0 +1,13 @@
+{
+  "pathParameters": {
+    "id": "test-uuid-123"
+  },
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "httpMethod": "GET",
+  "path": "/personajes/test-uuid-123",
+  "requestContext": {
+    "requestId": "test-request-id-get-db"
+  }
+}

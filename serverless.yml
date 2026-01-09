@@ -1,0 +1,117 @@
+service: starwars-api
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ${env:AWS_REGION, 'us-east-2'}
+  stage: ${opt:stage, env:STAGE, 'dev'}
+
+  # Variables de entorno globales para todas las funciones Lambda
+  environment:
+    PERSONAJES_TABLE: ${self:custom.personajesTableName}
+    REGION: ${self:provider.region}
+    NODE_ENV: ${env:NODE_ENV, 'development'}
+    SWAPI_BASE_URL: ${env:SWAPI_BASE_URL, 'https://swapi.py4e.com/api'}
+    SWAPI_TIMEOUT: ${env:SWAPI_TIMEOUT, '10000'}
+
+  # Permisos IAM para que las Lambdas puedan acceder a DynamoDB
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.personajesTableName}
+
+# Variables personalizadas
+custom:
+  personajesTableName: ${self:service}-personajes-${self:provider.stage}
+
+  # Configuración de dotenv plugin para excluir variables reservadas
+  dotenv:
+    exclude:
+      - AWS_REGION
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_SESSION_TOKEN
+
+# Plugins
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-offline
+
+# Funciones Lambda
+functions:
+  # GET - Obtener personaje de SWAPI (traduce del inglés al español)
+  getPersonajeSWAPI:
+    handler: src/handlers/getPersonaje.handler
+    description: Obtiene un personaje de SWAPI y traduce los atributos al español
+    events:
+      - http:
+          path: personajes/swapi/{id}
+          method: get
+          cors: true
+
+  # POST - Crear personaje en DynamoDB
+  createPersonaje:
+    handler: src/handlers/crearEntidad.handler
+    description: Crea un nuevo personaje en DynamoDB
+    events:
+      - http:
+          path: personajes
+          method: post
+          cors: true
+
+  # GET - Listar todos los personajes de DynamoDB
+  listPersonajes:
+    handler: src/handlers/listarPersonajes.handler
+    description: Lista todos los personajes almacenados en DynamoDB
+    events:
+      - http:
+          path: personajes
+          method: get
+          cors: true
+
+  # GET - Obtener personaje de DynamoDB por ID
+  getPersonaje:
+    handler: src/handlers/obtenerPersonaje.handler
+    description: Obtiene un personaje almacenado en DynamoDB
+    events:
+      - http:
+          path: personajes/{id}
+          method: get
+          cors: true
+
+# Recursos de AWS (DynamoDB)
+resources:
+  Resources:
+    # Tabla de DynamoDB para Personajes
+    PersonajesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.personajesTableName}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        Tags:
+          - Key: Environment
+            Value: ${self:provider.stage}
+          - Key: Service
+            Value: ${self:service}
+
+  # Outputs para referencia
+  Outputs:
+    PersonajesTableName:
+      Description: Nombre de la tabla de DynamoDB para Personajes
+      Value:
+        Ref: PersonajesTable
+      Export:
+        Name: ${self:service}-PersonajesTable-${self:provider.stage}

@@ -1,0 +1,187 @@
+# Versión mejorada de serverless.yml con configuraciones adicionales para producción
+# Para usar este archivo: cp serverless.prod.yml serverless.yml
+
+service: starwars-api
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ${env:AWS_REGION, 'us-east-2'}
+  stage: ${opt:stage, env:STAGE, 'dev'}
+
+  # Timeout y memoria por defecto para todas las funciones
+  timeout: 30
+  memorySize: 256
+
+  # Variables de entorno globales para todas las funciones Lambda
+  environment:
+    PERSONAJES_TABLE: ${self:custom.personajesTableName}
+    REGION: ${self:provider.region}
+    NODE_ENV: ${env:NODE_ENV, 'development'}
+    SWAPI_BASE_URL: ${env:SWAPI_BASE_URL, 'https://swapi.py4e.com/api'}
+    SWAPI_TIMEOUT: ${env:SWAPI_TIMEOUT, '10000'}
+
+  # Permisos IAM para que las Lambdas puedan acceder a DynamoDB
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.personajesTableName}
+    # Permisos para CloudWatch Logs
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource:
+        - arn:aws:logs:${self:provider.region}:*:log-group:/aws/lambda/*:*
+
+  # Logs de API Gateway
+  logs:
+    restApi: true
+
+  # Tracing con X-Ray
+  tracing:
+    lambda: true
+    apiGateway: true
+
+  # Tags globales
+  tags:
+    Project: StarWarsAPI
+    ManagedBy: Serverless
+    Stage: ${self:provider.stage}
+
+  # Configuración de API Gateway
+  apiGateway:
+    minimumCompressionSize: 1024 # Comprimir respuestas > 1KB
+    shouldStartNameWithService: true
+
+# Variables personalizadas
+custom:
+  personajesTableName: ${self:service}-personajes-${self:provider.stage}
+
+# Plugins
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-offline
+
+# Funciones Lambda
+functions:
+  # GET - Obtener personaje de SWAPI (traduce del inglés al español)
+  getPersonajeSWAPI:
+    handler: src/handlers/getPersonaje.handler
+    description: Obtiene un personaje de SWAPI y traduce los atributos al español
+    timeout: 15
+    events:
+      - http:
+          path: personajes/swapi/{id}
+          method: get
+          cors: true
+          request:
+            parameters:
+              paths:
+                id: true
+
+  # POST - Crear personaje en DynamoDB
+  createPersonaje:
+    handler: src/handlers/crearEntidad.handler
+    description: Crea un nuevo personaje en DynamoDB
+    timeout: 10
+    events:
+      - http:
+          path: personajes
+          method: post
+          cors: true
+
+  # GET - Listar todos los personajes de DynamoDB
+  listPersonajes:
+    handler: src/handlers/listarPersonajes.handler
+    description: Lista todos los personajes almacenados en DynamoDB
+    timeout: 15
+    events:
+      - http:
+          path: personajes
+          method: get
+          cors: true
+          request:
+            parameters:
+              querystrings:
+                limite: false
+
+  # GET - Obtener personaje de DynamoDB por ID
+  getPersonaje:
+    handler: src/handlers/obtenerPersonaje.handler
+    description: Obtiene un personaje almacenado en DynamoDB
+    timeout: 10
+    events:
+      - http:
+          path: personajes/{id}
+          method: get
+          cors: true
+          request:
+            parameters:
+              paths:
+                id: true
+
+# Recursos de AWS (DynamoDB)
+resources:
+  Resources:
+    # Tabla de DynamoDB para Personajes
+    PersonajesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.personajesTableName}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        # Point-in-time recovery (recomendado para producción)
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        # Server-side encryption
+        SSESpecification:
+          SSEEnabled: true
+        # Stream para auditoría (opcional)
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+        Tags:
+          - Key: Environment
+            Value: ${self:provider.stage}
+          - Key: Service
+            Value: ${self:service}
+          - Key: ManagedBy
+            Value: Serverless
+
+  # Outputs para referencia
+  Outputs:
+    PersonajesTableName:
+      Description: Nombre de la tabla de DynamoDB para Personajes
+      Value:
+        Ref: PersonajesTable
+      Export:
+        Name: ${self:service}-PersonajesTable-${self:provider.stage}
+
+    PersonajesTableArn:
+      Description: ARN de la tabla de DynamoDB
+      Value:
+        Fn::GetAtt:
+          - PersonajesTable
+          - Arn
+      Export:
+        Name: ${self:service}-PersonajesTableArn-${self:provider.stage}
+
+    ServiceEndpoint:
+      Description: URL del API Gateway
+      Value:
+        Fn::Sub: https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/${self:provider.stage}
+      Export:
+        Name: ${self:service}-ServiceEndpoint-${self:provider.stage}

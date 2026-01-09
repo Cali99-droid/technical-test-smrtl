@@ -1,0 +1,11 @@
+{
+  "body": "{\"altura\":\"182\",\"masa\":\"77\"}",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "httpMethod": "POST",
+  "path": "/personajes",
+  "requestContext": {
+    "requestId": "test-request-id-post-invalid"
+  }
+}

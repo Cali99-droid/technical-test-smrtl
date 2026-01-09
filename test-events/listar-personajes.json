@@ -1,0 +1,13 @@
+{
+  "queryStringParameters": {
+    "limite": "10"
+  },
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "httpMethod": "GET",
+  "path": "/personajes",
+  "requestContext": {
+    "requestId": "test-request-id-list"
+  }
+}

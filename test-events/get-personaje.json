@@ -1,0 +1,13 @@
+{
+  "pathParameters": {
+    "id": "1"
+  },
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "httpMethod": "GET",
+  "path": "/personajes/swapi/1",
+  "requestContext": {
+    "requestId": "test-request-id-123"
+  }
+}

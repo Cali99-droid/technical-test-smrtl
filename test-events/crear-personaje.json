@@ -1,0 +1,11 @@
+{
+  "body": "{\"nombre\":\"Obi-Wan Kenobi\",\"altura\":\"182\",\"masa\":\"77\",\"color_de_cabello\":\"castaño\",\"color_de_piel\":\"clara\",\"color_de_ojos\":\"azul\",\"año_de_nacimiento\":\"57BBY\",\"genero\":\"masculino\",\"planeta_natal\":\"Stewjon\",\"peliculas\":[\"La Amenaza Fantasma\",\"El Ataque de los Clones\",\"La Venganza de los Sith\"],\"especies\":[\"Humano\"],\"vehiculos\":[],\"naves_espaciales\":[\"Jedi Starfighter\"]}",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "httpMethod": "POST",
+  "path": "/personajes",
+  "requestContext": {
+    "requestId": "test-request-id-post-123"
+  }
+}
