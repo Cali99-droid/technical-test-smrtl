@@ -20,6 +20,8 @@ El proyecto se encuentra desplegado y operativo en la región `us-east-2`.
 | **GET**  | `/personajes`            | DynamoDB | Lista todos los personajes almacenados localmente.              |
 | **GET**  | `/personajes/{id}`       | DynamoDB | Obtiene un personaje específico por su ID único desde la BD.    |
 
+- TODO: handlers para funciones de eliminar y actualizar personajes en DynamoDB
+
 ---
 
 ## ⚠️ Nota sobre SWAPI Endpoint
@@ -58,13 +60,7 @@ Se incluye documentación técnica bajo el estándar **OpenAPI 3.0**:
 
 ````bash
 npm install
-## Instalación
-
-### 1. Instalar dependencias
-
-```bash
-npm install
-````
+```
 
 ### 2. Configurar variables de entorno
 
@@ -108,22 +104,6 @@ npm test
 ```bash
 npm run test:coverage
 ```
-
----
-
-## Documentación de API
-
-La documentación completa de la API está disponible en formato OpenAPI 3.0:
-
-```bash
-openapi.yml
-```
-
-Puedes visualizar la documentación usando herramientas como:
-
-- [Swagger Editor](https://editor.swagger.io/)
-- [Stoplight Studio](https://stoplight.io/)
-- Importar en Postman
 
 ---
 
@@ -229,3 +209,4 @@ npm run deploy:prod
 Este proyecto fue desarrollado utilizando **Claude Code** (Anthropic) como asistente de ingeniería.
 
 - **Estrategia:** Se utilizó un archivo de contexto `CLAUDE.md` para guiar a la IA en las reglas de negocio, el mapeo de atributos y la arquitectura de AWS.
+````

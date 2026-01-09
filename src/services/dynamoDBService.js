@@ -3,11 +3,11 @@
  * Maneja operaciones CRUD para la tabla de Personajes
  */
 
-const AWS = require('aws-sdk');
+const AWS = require("aws-sdk");
 
 // Configurar DynamoDB
 const dynamoDB = new AWS.DynamoDB.DocumentClient({
-  region: process.env.REGION || 'us-east-2'
+  region: process.env.REGION || "us-east-2",
 });
 
 const TABLA_PERSONAJES = process.env.PERSONAJES_TABLE;
@@ -21,29 +21,37 @@ const TABLA_PERSONAJES = process.env.PERSONAJES_TABLE;
 const guardarPersonaje = async (personaje) => {
   try {
     if (!TABLA_PERSONAJES) {
-      throw new Error('La variable de entorno PERSONAJES_TABLE no está configurada');
+      throw new Error(
+        "La variable de entorno PERSONAJES_TABLE no está configurada"
+      );
     }
 
-    console.log(`[DynamoDB Service] Guardando personaje en tabla: ${TABLA_PERSONAJES}`);
-    console.log(`[DynamoDB Service] Datos del personaje:`, JSON.stringify(personaje, null, 2));
+    console.log(
+      `[DynamoDB Service] Guardando personaje en tabla: ${TABLA_PERSONAJES}`
+    );
+    console.log(
+      `[DynamoDB Service] Datos del personaje:`,
+      JSON.stringify(personaje, null, 2)
+    );
 
     const params = {
       TableName: TABLA_PERSONAJES,
       Item: personaje,
       // Opcional: Evitar sobrescribir si el ID ya existe
-      ConditionExpression: 'attribute_not_exists(id)'
+      ConditionExpression: "attribute_not_exists(id)",
     };
 
     await dynamoDB.put(params).promise();
 
-    console.log(`[DynamoDB Service] Personaje guardado exitosamente con ID: ${personaje.id}`);
+    console.log(
+      `[DynamoDB Service] Personaje guardado exitosamente con ID: ${personaje.id}`
+    );
 
     return personaje;
-
   } catch (error) {
-    console.error('[DynamoDB Service] Error al guardar personaje:', error);
+    console.error("[DynamoDB Service] Error al guardar personaje:", error);
 
-    if (error.code === 'ConditionalCheckFailedException') {
+    if (error.code === "ConditionalCheckFailedException") {
       throw new Error(`Ya existe un personaje con el ID ${personaje.id}`);
     }
 
@@ -60,14 +68,16 @@ const guardarPersonaje = async (personaje) => {
 const obtenerPersonajePorId = async (id) => {
   try {
     if (!TABLA_PERSONAJES) {
-      throw new Error('La variable de entorno PERSONAJES_TABLE no está configurada');
+      throw new Error(
+        "La variable de entorno PERSONAJES_TABLE no está configurada"
+      );
     }
 
     console.log(`[DynamoDB Service] Buscando personaje con ID: ${id}`);
 
     const params = {
       TableName: TABLA_PERSONAJES,
-      Key: { id }
+      Key: { id },
     };
 
     const resultado = await dynamoDB.get(params).promise();
@@ -77,11 +87,14 @@ const obtenerPersonajePorId = async (id) => {
       return null;
     }
 
-    console.log(`[DynamoDB Service] Personaje encontrado: ${resultado.Item.nombre || 'Sin nombre'}`);
+    console.log(
+      `[DynamoDB Service] Personaje encontrado: ${
+        resultado.Item.nombre || "Sin nombre"
+      }`
+    );
     return resultado.Item;
-
   } catch (error) {
-    console.error('[DynamoDB Service] Error al obtener personaje:', error);
+    console.error("[DynamoDB Service] Error al obtener personaje:", error);
     throw new Error(`Error al consultar DynamoDB: ${error.message}`);
   }
 };
@@ -95,30 +108,33 @@ const obtenerPersonajePorId = async (id) => {
 const listarPersonajes = async (limite = 50) => {
   try {
     if (!TABLA_PERSONAJES) {
-      throw new Error('La variable de entorno PERSONAJES_TABLE no está configurada');
+      throw new Error(
+        "La variable de entorno PERSONAJES_TABLE no está configurada"
+      );
     }
 
     console.log(`[DynamoDB Service] Listando personajes (límite: ${limite})`);
 
     const params = {
       TableName: TABLA_PERSONAJES,
-      Limit: limite
+      Limit: limite,
     };
 
     const resultado = await dynamoDB.scan(params).promise();
 
-    console.log(`[DynamoDB Service] Se encontraron ${resultado.Items.length} personajes`);
+    console.log(
+      `[DynamoDB Service] Se encontraron ${resultado.Items.length} personajes`
+    );
 
     return resultado.Items || [];
-
   } catch (error) {
-    console.error('[DynamoDB Service] Error al listar personajes:', error);
+    console.error("[DynamoDB Service] Error al listar personajes:", error);
     throw new Error(`Error al consultar DynamoDB: ${error.message}`);
   }
 };
 
 /**
- * Actualiza un personaje en DynamoDB
+ * Actualiza un personaje en DynamoDB - Sin Handler
  * @param {string} id - ID del personaje
  * @param {Object} datosActualizados - Datos a actualizar
  * @returns {Promise<Object>} Personaje actualizado
@@ -127,7 +143,9 @@ const listarPersonajes = async (limite = 50) => {
 const actualizarPersonaje = async (id, datosActualizados) => {
   try {
     if (!TABLA_PERSONAJES) {
-      throw new Error('La variable de entorno PERSONAJES_TABLE no está configurada');
+      throw new Error(
+        "La variable de entorno PERSONAJES_TABLE no está configurada"
+      );
     }
 
     console.log(`[DynamoDB Service] Actualizando personaje con ID: ${id}`);
@@ -138,7 +156,8 @@ const actualizarPersonaje = async (id, datosActualizados) => {
     const expressionAttributeValues = {};
 
     Object.keys(datosActualizados).forEach((key, index) => {
-      if (key !== 'id') { // No actualizar el ID
+      if (key !== "id") {
+        // No actualizar el ID
         const attributeName = `#attr${index}`;
         const attributeValue = `:val${index}`;
 
@@ -151,10 +170,10 @@ const actualizarPersonaje = async (id, datosActualizados) => {
     const params = {
       TableName: TABLA_PERSONAJES,
       Key: { id },
-      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
+      UpdateExpression: `SET ${updateExpressions.join(", ")}`,
       ExpressionAttributeNames: expressionAttributeNames,
       ExpressionAttributeValues: expressionAttributeValues,
-      ReturnValues: 'ALL_NEW'
+      ReturnValues: "ALL_NEW",
     };
 
     const resultado = await dynamoDB.update(params).promise();
@@ -162,15 +181,14 @@ const actualizarPersonaje = async (id, datosActualizados) => {
     console.log(`[DynamoDB Service] Personaje actualizado exitosamente`);
 
     return resultado.Attributes;
-
   } catch (error) {
-    console.error('[DynamoDB Service] Error al actualizar personaje:', error);
+    console.error("[DynamoDB Service] Error al actualizar personaje:", error);
     throw new Error(`Error al actualizar en DynamoDB: ${error.message}`);
   }
 };
 
 /**
- * Elimina un personaje de DynamoDB
+ * Elimina un personaje de DynamoDB - Sin Handler
  * @param {string} id - ID del personaje
  * @returns {Promise<boolean>} true si se eliminó exitosamente
  * @throws {Error} Si hay error al eliminar
@@ -178,14 +196,16 @@ const actualizarPersonaje = async (id, datosActualizados) => {
 const eliminarPersonaje = async (id) => {
   try {
     if (!TABLA_PERSONAJES) {
-      throw new Error('La variable de entorno PERSONAJES_TABLE no está configurada');
+      throw new Error(
+        "La variable de entorno PERSONAJES_TABLE no está configurada"
+      );
     }
 
     console.log(`[DynamoDB Service] Eliminando personaje con ID: ${id}`);
 
     const params = {
       TableName: TABLA_PERSONAJES,
-      Key: { id }
+      Key: { id },
     };
 
     await dynamoDB.delete(params).promise();
@@ -193,9 +213,8 @@ const eliminarPersonaje = async (id) => {
     console.log(`[DynamoDB Service] Personaje eliminado exitosamente`);
 
     return true;
-
   } catch (error) {
-    console.error('[DynamoDB Service] Error al eliminar personaje:', error);
+    console.error("[DynamoDB Service] Error al eliminar personaje:", error);
     throw new Error(`Error al eliminar de DynamoDB: ${error.message}`);
   }
 };
@@ -205,5 +224,5 @@ module.exports = {
   obtenerPersonajePorId,
   listarPersonajes,
   actualizarPersonaje,
-  eliminarPersonaje
+  eliminarPersonaje,
 };
